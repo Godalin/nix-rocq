@@ -6,30 +6,40 @@
   outputs =
     { self, nixpkgs }:
     let
-      system = "x86_64-linux";
-      # system = "x86_64-darwin";
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
+      forAllSystems = nixpkgs.lib.genAttrs systems;
     in
     {
-      devShells."${system}".default =
+      devShells = forAllSystems (
+        system:
         let
           pkgs = import nixpkgs {
             inherit system;
           };
         in
-        pkgs.mkShell {
-          packages = with pkgs; [
-            coq
-            coqPackages.stdlib
-            coqPackages.coq-elpi
-            coqPackages.vscoq-language-server
-          ];
-          shell = nixpkgs.legacyPackages.x86_64-linux.zsh;
-          shellHook = ''
-            echo "Welcome to the Rocq Shell!"
-            echo "We will Rocq you up!"
-            rocq --version
-          '';
-          ROCQ_ENV = 1;
-        };
+        {
+          default = pkgs.mkShell {
+            packages = with pkgs; [
+              rocq-core
+              coqPackages.stdlib
+              coqPackages.coq-elpi
+              coqPackages.vscoq-language-server
+            ];
+            shell = pkgs.zsh;
+            shellHook = ''
+              echo "Welcome to the Rocq Shell!"
+              echo "We will Rocq you up!"
+              echo "Current system: ${system}"
+              rocq --version
+            '';
+            ROCQ_ENV = 1;
+          };
+        }
+      );
     };
 }
